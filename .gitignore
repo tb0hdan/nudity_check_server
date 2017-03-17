@@ -22,3 +22,5 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+nudity_check_server/nudity_check_server

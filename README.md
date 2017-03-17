@@ -3,6 +3,7 @@ HTTP Server that accepts image URL and returns nudity status
 
 ```bash
 cd nudity_check_server
+go get github.com/koyachi/go-nude
 go build
 ./nudity_check_server
 ```
