@@ -3,18 +3,38 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"image"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/koyachi/go-nude"
 )
 
+type memCacheType struct {
+	cache map[string]bool
+	m     sync.RWMutex
+}
+
+func (mc *memCacheType) Get(key string) (isNude bool, ok bool) {
+	mc.m.RLock()
+	isNude, ok = mc.cache[key]
+	mc.m.RUnlock()
+	return
+}
+
+func (mc *memCacheType) Set(key string, value bool) {
+	mc.m.Lock()
+	mc.cache[key] = value
+	mc.m.Unlock()
+}
+
 var (
 	// in memory cache
-	memCache = map[string]bool{}
+	memCache = &memCacheType{cache: make(map[string]bool)}
 
 	// command line flags
 	listenTo = flag.String("listen-to", "localhost:8000", "bind address and port")
@@ -48,6 +68,10 @@ func checkLinknudity(link string) (isNude bool) {
 	return
 }
 
+type resultType struct {
+	IsNude bool `json:"isNude"`
+}
+
 func main() {
 	flag.Parse()
 
@@ -61,17 +85,22 @@ func main() {
 			link, err := base64.URLEncoding.DecodeString(u)
 			if err == nil {
 				key := fmt.Sprintf("%x", sha256.Sum256(link))
-				isNude, ok = memCache[key]
+				isNude, ok = memCache.Get(key)
 				if !ok {
 					isNude = checkLinknudity(string(link))
-					memCache[key] = isNude
+					memCache.Set(key, isNude)
 				}
 			} else {
 				log.Printf("url decoding error %s: %s", u, err)
 			}
 		}
 
-		fmt.Fprintf(w, "{\"isNude\": \"%v\"}", isNude)
+		buf, err := json.Marshal(&resultType{isNude})
+		if err != nil {
+			log.Printf("json encode error: %s", err)
+		}
+
+		w.Write(buf)
 	})
 	http.ListenAndServe(*listenTo, nil)
 }
