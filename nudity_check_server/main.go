@@ -9,6 +9,7 @@ import (
 	"image"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/koyachi/go-nude"
@@ -84,6 +85,7 @@ func main() {
 		if u != "" {
 			link, err := base64.URLEncoding.DecodeString(u)
 			if err == nil {
+				link := []byte(strings.TrimRight(string(link), "\n"))
 				key := fmt.Sprintf("%x", sha256.Sum256(link))
 				isNude, ok = memCache.Get(key)
 				if !ok {

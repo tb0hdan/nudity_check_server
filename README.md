@@ -19,3 +19,26 @@ response:
 ```json
 {"isNude": "true"}
 ```
+
+# Building query string
+
+## Bash
+
+```bash
+echo -n 'http://example.com/path/to/image.jpg'
+```
+
+or even
+
+```bash
+echo 'http://example.com/path/to/image.jpg'
+```
+
+## Python
+
+```
+>>> import base64
+>>> base64.urlsafe_b64encode('http://example.com/other/path/to/image.jpg')
+'aHR0cDovL2V4YW1wbGUuY29tL290aGVyL3BhdGgvdG8vaW1hZ2UuanBn'
+>>>
+```
