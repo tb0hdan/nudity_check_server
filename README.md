@@ -25,13 +25,13 @@ response:
 ## Bash
 
 ```bash
-echo -n 'http://example.com/path/to/image.jpg'
+echo -n 'http://example.com/path/to/image.jpg'|base64
 ```
 
 or even
 
 ```bash
-echo 'http://example.com/path/to/image.jpg'
+echo 'http://example.com/path/to/image.jpg'|base64
 ```
 
 ## Python
