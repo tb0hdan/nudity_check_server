@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -9,7 +10,7 @@ import (
 	"image"
 	"log"
 	"net/http"
-	"strings"
+	"net/url"
 	"sync"
 
 	"github.com/koyachi/go-nude"
@@ -18,6 +19,12 @@ import (
 type memCacheType struct {
 	cache map[string]bool
 	m     sync.RWMutex
+}
+
+func is_url_okay(url_string string) (result bool){
+	parsed, _ := url.Parse(url_string)
+	result = fmt.Sprintf("%v://%v%v", parsed.Scheme, parsed.Host, parsed.Path) == url_string
+	return
 }
 
 func (mc *memCacheType) Get(key string) (isNude bool, ok bool) {
@@ -71,33 +78,39 @@ func checkLinknudity(link string) (isNude bool) {
 
 type resultType struct {
 	IsNude bool `json:"isNude"`
+	Status string `json:"status"`
 }
 
 func main() {
 	flag.Parse()
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var isNude, ok bool
+		var status string
 
 		w.Header().Set("Content-type", "application/json")
 
 		u := r.URL.Query().Get("u")
 		if u != "" {
+			status = "error"
 			link, err := base64.URLEncoding.DecodeString(u)
 			if err == nil {
-				link := []byte(strings.TrimRight(string(link), "\n"))
-				key := fmt.Sprintf("%x", sha256.Sum256(link))
-				isNude, ok = memCache.Get(key)
-				if !ok {
-					isNude = checkLinknudity(string(link))
-					memCache.Set(key, isNude)
+				link = bytes.TrimRight(link, "\n")
+				if is_url_okay(string(link)) {
+					status = "ok"
+					key := fmt.Sprintf("%x", sha256.Sum256(link))
+					isNude, ok = memCache.Get(key)
+					if !ok {
+						isNude = checkLinknudity(string(link))
+						memCache.Set(key, isNude)
+					}
+				} else {
+					log.Printf("encoded url should not contain query string")
 				}
 			} else {
 				log.Printf("url decoding error %s: %s", u, err)
 			}
 		}
-
-		buf, err := json.Marshal(&resultType{isNude})
+		buf, err := json.Marshal(resultType{IsNude: isNude, Status: status})
 		if err != nil {
 			log.Printf("json encode error: %s", err)
 		}

@@ -17,10 +17,12 @@ curl -X GET 'http://localhost:8000/?u=aHR0cDovLzY4Lm1lZGlhLnR1bWJsci5jb20vN2VlNT
 response:
 
 ```json
-{"isNude": "true"}
+{"isNude": "true", "status": "ok"}
 ```
 
 # Building query string
+
+WARNING: Server doesn't support image URLs with query strings intentionally to minimize cache poisoning
 
 ## Bash
 
