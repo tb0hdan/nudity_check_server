@@ -1,5 +1,9 @@
-# nudity_check_server
+# Nudity check server
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/tb0hdan/nudity_check_server)](https://goreportcard.com/report/github.com/tb0hdan/nudity_check_server)
+
 HTTP Server that accepts image URL and returns nudity status
+
 
 ```bash
 cd nudity_check_server
