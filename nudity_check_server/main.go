@@ -81,7 +81,7 @@ type resultType struct {
 	Status string `json:"status"`
 }
 
-func check_b64(query_string string) (result string){
+func check_b64(query_string string) (buf []byte){
 	var isNude, ok bool
 	var status string
 	if query_string != "" {
@@ -110,7 +110,6 @@ func check_b64(query_string string) (result string){
 	if err != nil {
 		log.Printf("json encode error: %s", err)
 	}
-        result = string(buf)
         return
 }
 
