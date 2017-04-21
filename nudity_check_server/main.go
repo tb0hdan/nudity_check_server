@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/koyachi/go-nude"
+        "github.com/valyala/fasthttp"
 )
 
 type memCacheType struct {
@@ -81,41 +82,46 @@ type resultType struct {
 	Status string `json:"status"`
 }
 
-func main() {
-	flag.Parse()
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var isNude, ok bool
-		var status string
-
-		w.Header().Set("Content-type", "application/json")
-
-		u := r.URL.Query().Get("u")
-		if u != "" {
-			status = "error"
-			link, err := base64.URLEncoding.DecodeString(u)
-			if err == nil {
-				link = bytes.TrimRight(link, "\n")
-				if is_url_okay(string(link)) {
-					status = "ok"
-					key := fmt.Sprintf("%x", sha256.Sum256(link))
-					isNude, ok = memCache.Get(key)
-					if !ok {
-						isNude = checkLinknudity(string(link))
-						memCache.Set(key, isNude)
-					}
-				} else {
-					log.Printf("encoded url should not contain query string")
+func check_b64(query_string string) (result string){
+	var isNude, ok bool
+	var status string
+	if query_string != "" {
+		status = "error"
+		link, err := base64.URLEncoding.DecodeString(query_string)
+		if err == nil {
+			link = bytes.TrimRight(link, "\n")
+			if is_url_okay(string(link)) {
+				status = "ok"
+				key := fmt.Sprintf("%x", sha256.Sum256(link))
+				isNude, ok = memCache.Get(key)
+				if !ok {
+					isNude = checkLinknudity(string(link))
+					memCache.Set(key, isNude)
 				}
 			} else {
-				log.Printf("url decoding error %s: %s", u, err)
+				log.Printf("encoded url should not contain query string")
 			}
+		} else {
+			log.Printf("url decoding error %s: %s", query_string, err)
 		}
-		buf, err := json.Marshal(resultType{IsNude: isNude, Status: status})
-		if err != nil {
-			log.Printf("json encode error: %s", err)
-		}
+	} else {
+            status = "empty_query"
+        }
+	buf, err := json.Marshal(resultType{IsNude: isNude, Status: status})
+	if err != nil {
+		log.Printf("json encode error: %s", err)
+	}
+        result = string(buf)
+        return
+}
 
-		w.Write(buf)
-	})
-	http.ListenAndServe(*listenTo, nil)
+func main() {
+	flag.Parse()
+        requestHandler := func(ctx *fasthttp.RequestCtx) {
+            ctx.SetContentType("application/json")
+            ctx.SetStatusCode(fasthttp.StatusOK)
+            query_string := string(ctx.QueryArgs().Peek("u"))
+            fmt.Fprintf(ctx, "%s", check_b64(query_string))
+        }
+        fasthttp.ListenAndServe(*listenTo, requestHandler)
 }
