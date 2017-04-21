@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"net/http"
 	"net/url"
 	"sync"
+        "time"
 
 	"github.com/koyachi/go-nude"
         "github.com/valyala/fasthttp"
@@ -51,14 +51,13 @@ var (
 
 // fetchLink download image by link and returns it
 func fetchLink(link string) (img image.Image, err error) {
-	r, err := http.DefaultClient.Get(link)
+        timeout := 3 * time.Second
+	_, body, err := fasthttp.GetTimeout(nil, link, timeout)
 	if err != nil {
 		return
 	}
 
-	defer r.Body.Close()
-
-	img, _, err = image.Decode(r.Body)
+	img, _, err = image.Decode(bytes.NewReader(body))
 	return
 }
 
